@@ -24,12 +24,10 @@
     that: zone_lookup.objects | length > 0
     fail_msg: "DNS zone {{ default_zone }} not found in Infoblox"
 
-# LAB CHECK: assumes a CIDR exists in only one IP space, so no space filter is needed.
+# filter_query, not filters: the module's filters form requires space, which is what we are looking up.
 - name: Look up subnet {{ snow_network_cidr }}
   infoblox.universal_ddi.ipam_subnet_info:
-    filters:
-      address: "{{ snow_network_cidr.split('/')[0] }}"
-      cidr: "{{ snow_network_cidr.split('/')[1] }}"
+    filter_query: "address=='{{ snow_network_cidr.split('/')[0] }}' and cidr=={{ snow_network_cidr.split('/')[1] }}"
   register: subnet_lookup
 
 - name: Assert subnet resolved to exactly one object
