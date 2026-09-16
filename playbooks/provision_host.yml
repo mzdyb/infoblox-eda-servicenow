@@ -1,0 +1,13 @@
+---
+- name: Provision host from ServiceNow request
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    default_zone: corp.example.com
+    site_map:
+      datacenter-eu-central: eu-central-1
+      datacenter-eu-east: eu-east-1
+
+  roles:
+    - host_provision

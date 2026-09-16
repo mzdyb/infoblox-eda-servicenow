@@ -1,0 +1,112 @@
+---
+- name: Split FQDN into record and zone name
+  ansible.builtin.set_fact:
+    decom_record_name: "{{ decom_fqdn.split('.')[0] }}"
+    decom_zone_fqdn: "{{ decom_fqdn.split('.')[1:] | join('.') }}."
+
+# Asserted before the record lookup: a failed zone lookup must not look like an already-absent host.
+- name: Look up DNS zone {{ decom_zone_fqdn }}
+  infoblox.universal_ddi.dns_auth_zone_info:
+    filters:
+      fqdn: "{{ decom_zone_fqdn }}"
+  register: decom_zone_lookup
+
+- name: Assert zone resolved
+  ansible.builtin.assert:
+    that: decom_zone_lookup.objects | length > 0
+    fail_msg: "DNS zone {{ decom_zone_fqdn }} not found in Infoblox"
+
+- name: Set zone ID
+  ansible.builtin.set_fact:
+    decom_zone_id: "{{ decom_zone_lookup.objects[0].id }}"
+
+- name: Look up A record {{ decom_fqdn }}
+  infoblox.universal_ddi.dns_record_info:
+    filters:
+      absolute_name_spec: "{{ decom_fqdn }}."
+      zone: "{{ decom_zone_id }}"
+      type: A
+  register: decom_record_lookup
+
+# Artifacts must be published before end_play or close-out receives nothing.
+- name: Report already absent host
+  when: decom_record_lookup.objects | length == 0
+  block:
+    - name: Publish already-absent result
+      ansible.builtin.set_stats:
+        data: >-
+          {{ {
+            summary_key: decom_fqdn ~ ' is already absent, nothing to decommission',
+            'decom_target_missing': true
+          } }}
+        per_host: false
+        aggregate: false
+
+    - name: End play, host already absent
+      ansible.builtin.meta: end_play
+
+- name: Set record facts
+  ansible.builtin.set_fact:
+    existing_ip: "{{ decom_record_lookup.objects[0].rdata.address }}"
+    decom_owner: "{{ decom_record_lookup.objects[0].tags.Owner | default('unknown', true) }}"
+
+# LAB CHECK: assumes the address object lists 'DNS' in usage while the A record exists.
+- name: Look up IPAM address {{ existing_ip }}
+  infoblox.universal_ddi.ipam_address_info:
+    filters:
+      address: "{{ existing_ip }}"
+  register: decom_address_lookup
+
+- name: Select the address used by DNS
+  ansible.builtin.set_fact:
+    decom_addresses: "{{ decom_address_lookup.objects | selectattr('usage', 'contains', 'DNS') | list }}"
+
+- name: Assert address resolved to exactly one object
+  ansible.builtin.assert:
+    that: decom_addresses | length == 1
+    fail_msg: "IP {{ existing_ip }} matched {{ decom_addresses | length }} IPAM addresses with DNS usage, expected 1"
+
+# LAB CHECK: assumes an address's parent is its subnet, not an address block.
+- name: Look up containing subnet
+  infoblox.universal_ddi.ipam_subnet_info:
+    id: "{{ decom_addresses[0].parent }}"
+  register: decom_subnet_lookup
+
+- name: Set IP space and subnet facts
+  ansible.builtin.set_fact:
+    decom_ip_space_id: "{{ decom_addresses[0].space }}"
+    decom_network_cidr: "{{ decom_subnet_lookup.objects[0].address }}/{{ decom_subnet_lookup.objects[0].cidr }}"
+
+- name: Look up DHCP fixed address at {{ existing_ip }}
+  infoblox.universal_ddi.dhcp_fixed_address_info:
+    filters:
+      address: "{{ existing_ip }}"
+      ip_space: "{{ decom_ip_space_id }}"
+  register: decom_dhcp_lookup
+
+- name: Set MAC from DHCP fixed address
+  ansible.builtin.set_fact:
+    decom_mac: "{{ decom_dhcp_lookup.objects[0].match_value }}"
+  when: decom_dhcp_lookup.objects | length > 0
+
+# The collection cannot filter CNAMEs by target, so only the host's own zone is checked.
+- name: Look up CNAME records in {{ decom_zone_fqdn }}
+  infoblox.universal_ddi.dns_record_info:
+    filters:
+      zone: "{{ decom_zone_id }}"
+      type: CNAME
+  register: decom_cname_lookup
+
+- name: Find CNAMEs pointing to {{ decom_fqdn }}
+  ansible.builtin.set_fact:
+    blocking_cnames: >-
+      {{ decom_cname_lookup.objects
+         | selectattr('rdata.cname', 'eq', decom_fqdn ~ '.')
+         | map(attribute='absolute_name_spec') | list }}
+
+- name: Assert no dependent CNAME records
+  ansible.builtin.assert:
+    that: blocking_cnames | length == 0
+    fail_msg: >-
+      Deletion blocked: {{ blocking_cnames | length }} CNAME record(s)
+      reference this host: {{ blocking_cnames | join(', ') }}

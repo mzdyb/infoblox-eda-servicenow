@@ -1,0 +1,129 @@
+---
+- name: Set host FQDN
+  ansible.builtin.set_fact:
+    host_fqdn: "{{ snow_hostname }}.{{ default_zone }}"
+
+# Published first so a failure-path rollback always knows its target and that nothing exists yet.
+# aggregate: false everywhere, otherwise a republished key is concatenated or summed instead of replaced.
+- name: Publish rollback target
+  ansible.builtin.set_stats:
+    data:
+      decom_fqdn: "{{ host_fqdn }}"
+      provision_started: false
+    per_host: false
+    aggregate: false
+
+- name: Look up DNS zone {{ default_zone }}
+  infoblox.universal_ddi.dns_auth_zone_info:
+    filters:
+      fqdn: "{{ default_zone }}."
+  register: zone_lookup
+
+- name: Assert zone resolved
+  ansible.builtin.assert:
+    that: zone_lookup.objects | length > 0
+    fail_msg: "DNS zone {{ default_zone }} not found in Infoblox"
+
+# LAB CHECK: assumes a CIDR exists in only one IP space, so no space filter is needed.
+- name: Look up subnet {{ snow_network_cidr }}
+  infoblox.universal_ddi.ipam_subnet_info:
+    filters:
+      address: "{{ snow_network_cidr.split('/')[0] }}"
+      cidr: "{{ snow_network_cidr.split('/')[1] }}"
+  register: subnet_lookup
+
+- name: Assert subnet resolved to exactly one object
+  ansible.builtin.assert:
+    that: subnet_lookup.objects | length == 1
+    fail_msg: "Subnet {{ snow_network_cidr }} matched {{ subnet_lookup.objects | length }} objects in Infoblox, expected 1"
+
+- name: Look up IP space of subnet {{ snow_network_cidr }}
+  infoblox.universal_ddi.ipam_ip_space_info:
+    id: "{{ subnet_lookup.objects[0].space }}"
+  register: ip_space_lookup
+
+- name: Set Infoblox facts
+  ansible.builtin.set_fact:
+    zone_id: "{{ zone_lookup.objects[0].id }}"
+    subnet_id: "{{ subnet_lookup.objects[0].id }}"
+    ip_space_id: "{{ subnet_lookup.objects[0].space }}"
+    site: "{{ site_map[ip_space_lookup.objects[0].name] }}"
+
+- name: Look up existing A record for {{ host_fqdn }}
+  infoblox.universal_ddi.dns_record_info:
+    filters:
+      absolute_name_spec: "{{ host_fqdn }}."
+      zone: "{{ zone_id }}"
+      type: A
+  register: existing_record
+
+- name: Report existing host
+  when: existing_record.objects | length > 0
+  block:
+    - name: Publish already-existing result
+      ansible.builtin.set_stats:
+        data:
+          allocated_ip: "{{ existing_record.objects[0].rdata.address }}"
+          snow_summary: "{{ host_fqdn }} already existed with IP {{ existing_record.objects[0].rdata.address }}; nothing created"
+        per_host: false
+        aggregate: false
+
+    - name: End play, host already exists
+      ansible.builtin.meta: end_play
+
+- name: Get next available IP in {{ snow_network_cidr }}
+  infoblox.universal_ddi.ipam_next_available_ip_info:
+    id: "{{ subnet_id }}"
+    contiguous: false
+    count: 1
+  register: next_ip
+
+- name: Set allocated IP
+  ansible.builtin.set_fact:
+    allocated_ip: "{{ next_ip.objects[0] }}"
+
+- name: Publish provisioning start
+  ansible.builtin.set_stats:
+    data:
+      allocated_ip: "{{ allocated_ip }}"
+      provision_started: true
+    per_host: false
+    aggregate: false
+
+- name: Set tags
+  ansible.builtin.set_fact:
+    host_tags:
+      Owner: "{{ snow_owner }}"
+      App: "{{ snow_app }}"
+      Ticket: "{{ snow_ritm_number }}"
+      Site: "{{ site }}"
+      Lifecycle: active
+
+- name: Create A record {{ host_fqdn }}
+  infoblox.universal_ddi.dns_record:
+    zone: "{{ zone_id }}"
+    name_in_zone: "{{ snow_hostname }}"
+    type: A
+    rdata:
+      address: "{{ allocated_ip }}"
+    comment: Provisioned via AAP
+    tags: "{{ host_tags }}"
+    state: present
+
+- name: Create DHCP fixed address for {{ snow_mac }}
+  infoblox.universal_ddi.dhcp_fixed_address:
+    address: "{{ allocated_ip }}"
+    match_type: mac
+    match_value: "{{ snow_mac }}"
+    ip_space: "{{ ip_space_id }}"
+    name: "{{ host_fqdn }}"
+    comment: Provisioned via AAP
+    tags: "{{ host_tags }}"
+    state: present
+
+- name: Publish provisioning result
+  ansible.builtin.set_stats:
+    data:
+      snow_summary: "Provisioned {{ host_fqdn }} at {{ allocated_ip }} in {{ snow_network_cidr }} (site {{ site }}), DHCP fixed address for {{ snow_mac }}"
+    per_host: false
+    aggregate: false
