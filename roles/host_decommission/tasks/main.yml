@@ -47,16 +47,18 @@
     - dns_removal is failed
     - "'not found' not in (dns_removal.msg | default('') | lower)"
 
+# Without a fixed address nothing in IPAM refers to the IP, so there is no release to check.
 - name: Verify IP release for {{ existing_ip }}
   ansible.builtin.include_tasks: verify_release.yml
+  when: decom_mac is defined
 
 - name: Publish decommission result
   ansible.builtin.set_stats:
     data: >-
       {{ {
-        summary_key: 'Decommissioned ' ~ decom_fqdn ~ ' (' ~ existing_ip ~ ' in ' ~ decom_network_cidr ~ '), '
-          ~ ('DHCP fixed address for ' ~ decom_mac ~ ' removed' if decom_mac is defined else 'no DHCP fixed address')
-          ~ ', IP released back to pool',
+        summary_key: 'Decommissioned ' ~ decom_fqdn ~ ' (' ~ existing_ip
+          ~ (' in ' ~ decom_network_cidr ~ '), DHCP fixed address for ' ~ decom_mac ~ ' removed, IP released back to pool'
+             if decom_mac is defined else '), no DHCP fixed address'),
         'decom_owner': decom_owner,
         'decom_target_missing': false
       } }}
