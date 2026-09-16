@@ -50,44 +50,31 @@
     existing_ip: "{{ decom_record_lookup.objects[0].rdata.address }}"
     decom_owner: "{{ decom_record_lookup.objects[0].tags.Owner | default('unknown', true) }}"
 
-# LAB CHECK: assumes the address object lists 'DNS' in usage while the A record exists.
-- name: Look up IPAM address {{ existing_ip }}
-  infoblox.universal_ddi.ipam_address_info:
-    filters:
-      address: "{{ existing_ip }}"
-  register: decom_address_lookup
-
-- name: Select the address used by DNS
-  ansible.builtin.set_fact:
-    decom_addresses: "{{ decom_address_lookup.objects | selectattr('usage', 'contains', 'DNS') | list }}"
-
-- name: Assert address resolved to exactly one object
-  ansible.builtin.assert:
-    that: decom_addresses | length == 1
-    fail_msg: "IP {{ existing_ip }} matched {{ decom_addresses | length }} IPAM addresses with DNS usage, expected 1"
-
-# LAB CHECK: assumes an address's parent is its subnet, not an address block.
-- name: Look up containing subnet
-  infoblox.universal_ddi.ipam_subnet_info:
-    id: "{{ decom_addresses[0].parent }}"
-  register: decom_subnet_lookup
-
-- name: Set IP space and subnet facts
-  ansible.builtin.set_fact:
-    decom_ip_space_id: "{{ decom_addresses[0].space }}"
-    decom_network_cidr: "{{ decom_subnet_lookup.objects[0].address }}/{{ decom_subnet_lookup.objects[0].cidr }}"
-
+# The fixed address carries the IP space and subnet; an A record leaves no trace in IPAM.
 - name: Look up DHCP fixed address at {{ existing_ip }}
   infoblox.universal_ddi.dhcp_fixed_address_info:
     filters:
       address: "{{ existing_ip }}"
-      ip_space: "{{ decom_ip_space_id }}"
   register: decom_dhcp_lookup
 
-- name: Set MAC from DHCP fixed address
-  ansible.builtin.set_fact:
-    decom_mac: "{{ decom_dhcp_lookup.objects[0].match_value }}"
-  when: decom_dhcp_lookup.objects | length > 0
+- name: Assert at most one DHCP fixed address uses {{ existing_ip }}
+  ansible.builtin.assert:
+    that: decom_dhcp_lookup.objects | length <= 1
+    fail_msg: "IP {{ existing_ip }} has {{ decom_dhcp_lookup.objects | length }} DHCP fixed addresses in different IP spaces, expected at most 1"
+
+- name: Resolve DHCP fixed address details
+  when: decom_dhcp_lookup.objects | length == 1
+  block:
+    - name: Look up subnet of {{ existing_ip }}
+      infoblox.universal_ddi.ipam_subnet_info:
+        id: "{{ decom_dhcp_lookup.objects[0].parent }}"
+      register: decom_subnet_lookup
+
+    - name: Set MAC, IP space and subnet
+      ansible.builtin.set_fact:
+        decom_mac: "{{ decom_dhcp_lookup.objects[0].match_value }}"
+        decom_ip_space_id: "{{ decom_dhcp_lookup.objects[0].ip_space }}"
+        decom_network_cidr: "{{ decom_subnet_lookup.objects[0].address }}/{{ decom_subnet_lookup.objects[0].cidr }}"
 
 # The collection cannot filter CNAMEs by target, so only the host's own zone is checked.
 - name: Look up CNAME records in {{ decom_zone_fqdn }}
