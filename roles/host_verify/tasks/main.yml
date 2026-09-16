@@ -1,0 +1,48 @@
+---
+- name: Set host FQDN
+  ansible.builtin.set_fact:
+    host_fqdn: "{{ snow_hostname }}.{{ default_zone }}"
+
+- name: Look up A record for {{ host_fqdn }}
+  infoblox.universal_ddi.dns_record_info:
+    filters:
+      absolute_name_spec: "{{ host_fqdn }}."
+      type: A
+  register: dns_lookup
+
+- name: Set host IP
+  ansible.builtin.set_fact:
+    host_ip: "{{ dns_lookup.objects[0].rdata.address if dns_lookup.objects | length == 1 else '' }}"
+
+- name: Look up DHCP fixed address at {{ host_ip }}
+  infoblox.universal_ddi.dhcp_fixed_address_info:
+    filters:
+      address: "{{ host_ip }}"
+  register: dhcp_lookup
+  when: host_ip | length > 0
+
+- name: Compare Infoblox state with the request
+  ansible.builtin.set_fact:
+    verify_problems: >-
+      {{
+        ([] if dns_lookup.objects | length == 1
+            else ['expected 1 A record for ' ~ host_fqdn ~ ', found ' ~ dns_lookup.objects | length])
+        + ([] if host_ip and snow_mac | lower in dhcp_lookup.objects | map(attribute='match_value') | map('lower') | list
+            else ['no DHCP fixed address for ' ~ snow_mac ~ ' at ' ~ (host_ip or 'unknown IP')])
+      }}
+
+# The summary goes out before the assert so close-out sees why verification failed.
+- name: Publish verification result
+  ansible.builtin.set_stats:
+    data:
+      snow_summary: >-
+        {{ (snow_summary ~ '; ') if snow_summary is defined else '' }}verification
+        {{ 'passed: A ' ~ host_fqdn ~ ' -> ' ~ host_ip ~ ', DHCP ' ~ snow_mac if verify_problems | length == 0
+           else 'failed: ' ~ verify_problems | join('; ') }}
+    per_host: false
+    aggregate: false
+
+- name: Assert host matches the request
+  ansible.builtin.assert:
+    that: verify_problems | length == 0
+    fail_msg: "Verification failed: {{ verify_problems | join('; ') }}"

@@ -1,0 +1,17 @@
+---
+# Universal DDI releases the address itself once no DNS/DHCP object references it; portal counters lag, so ask the API.
+- name: Query IPAM address {{ existing_ip }}
+  infoblox.universal_ddi.ipam_address_info:
+    filters:
+      address: "{{ existing_ip }}"
+      space: "{{ decom_ip_space_id }}"
+  register: ipam_check
+
+- name: Assert IP released back to pool
+  ansible.builtin.assert:
+    that: >-
+      ipam_check.objects | length == 0
+      or ipam_check.objects[0].usage | default([]) | intersect(['DNS', 'DHCP']) | length == 0
+    fail_msg: >-
+      IP {{ existing_ip }} was not released,
+      IPAM still shows usage: {{ ipam_check.objects[0].usage | default([]) }}

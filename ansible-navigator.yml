@@ -1,0 +1,19 @@
+---
+ansible-navigator:
+  ansible:
+    config:
+      path: ansible.cfg
+  execution-environment:
+    image: aap.rh.lab/ee-infoblox:3.0
+    pull:
+      policy: missing
+    environment-variables:
+      pass:
+        - INFOBLOX_PORTAL_KEY
+        - INFOBLOX_PORTAL_URL
+        - SN_HOST
+        - SN_USERNAME
+        - SN_PASSWORD
+  playbook-artifact:
+    enable: false
+  mode: stdout

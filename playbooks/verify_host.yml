@@ -1,0 +1,10 @@
+---
+- name: Verify provisioned host
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    default_zone: corp.example.com
+
+  roles:
+    - host_verify

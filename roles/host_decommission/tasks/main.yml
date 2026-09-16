@@ -1,0 +1,64 @@
+---
+# provision_started is only defined when running as rollback in the provision workflow.
+- name: Skip rollback when provisioning created nothing
+  when: provision_started is defined and not provision_started | bool
+  block:
+    - name: Publish skipped rollback
+      ansible.builtin.set_stats:
+        data:
+          rollback_summary: Rollback skipped, provisioning created nothing in Infoblox
+        per_host: false
+        aggregate: false
+
+    - name: End play, nothing to roll back
+      ansible.builtin.meta: end_play
+
+# Rollback reports separately so the provision failure summary reaches close-out intact.
+- name: Set summary artifact name
+  ansible.builtin.set_fact:
+    summary_key: "{{ 'rollback_summary' if provision_started is defined else 'snow_summary' }}"
+
+- name: Run decommission precheck for {{ decom_fqdn }}
+  ansible.builtin.include_tasks: precheck.yml
+
+- name: Remove DHCP fixed address for {{ existing_ip }}
+  infoblox.universal_ddi.dhcp_fixed_address:
+    address: "{{ existing_ip }}"
+    match_type: mac
+    match_value: "{{ decom_mac }}"
+    ip_space: "{{ decom_ip_space_id }}"
+    state: absent
+  register: dhcp_removal
+  when: decom_mac is defined
+  failed_when:
+    - dhcp_removal is failed
+    - "'not found' not in (dhcp_removal.msg | default('') | lower)"
+
+- name: Remove A record {{ decom_fqdn }}
+  infoblox.universal_ddi.dns_record:
+    zone: "{{ decom_zone_id }}"
+    name_in_zone: "{{ decom_record_name }}"
+    type: A
+    rdata:
+      address: "{{ existing_ip }}"
+    state: absent
+  register: dns_removal
+  failed_when:
+    - dns_removal is failed
+    - "'not found' not in (dns_removal.msg | default('') | lower)"
+
+- name: Verify IP release for {{ existing_ip }}
+  ansible.builtin.include_tasks: verify_release.yml
+
+- name: Publish decommission result
+  ansible.builtin.set_stats:
+    data: >-
+      {{ {
+        summary_key: 'Decommissioned ' ~ decom_fqdn ~ ' (' ~ existing_ip ~ ' in ' ~ decom_network_cidr ~ '), '
+          ~ ('DHCP fixed address for ' ~ decom_mac ~ ' removed' if decom_mac is defined else 'no DHCP fixed address')
+          ~ ', IP released back to pool',
+        'decom_owner': decom_owner,
+        'decom_target_missing': false
+      } }}
+    per_host: false
+    aggregate: false
