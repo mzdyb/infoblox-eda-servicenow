@@ -11,7 +11,7 @@
 #       SN_HOST: "{{ sn_host }}"
 #       SN_USERNAME: "{{ sn_username }}"
 #       SN_PASSWORD: "{{ sn_password }}"
-- name: Close out ServiceNow request
+- name: Note ServiceNow request progress
   hosts: localhost
   gather_facts: false
 
@@ -23,8 +23,13 @@
       {{ 'Deletions are never rolled back automatically, so Infoblox may be partially cleaned up. Request left open for review.'
          if snow_fqdn is defined
          else 'Nothing was changed in Infoblox: the automation rolled the request back. Request left open for review.' }}
+    start_note:
+      - "[Ansible Automation]"
+      - "{{ snow_ritm_number }}: started"
+      - "Requested by: {{ snow_requested_by }}"
+      - "AAP is running the {{ 'decommission' if snow_fqdn is defined else 'provisioning' }} workflow for {{ snow_fqdn | default(snow_hostname) }}"
     # Upstream jobs that die early publish no artifacts, so every artifact read below has a default.
-    work_note_lines:
+    result_note:
       - "[Ansible Automation]"
       - "{{ snow_ritm_number }}: {{ outcome }}"
       - "Requested by: {{ snow_requested_by }}"
@@ -32,6 +37,7 @@
       - "{{ 'Previous owner: ' ~ decom_owner if snow_fqdn is defined and decom_owner is defined else '' }}"
       - "{{ 'Rollback: ' ~ rollback_summary | default('no rollback details published') if outcome != 'success' and snow_fqdn is not defined else '' }}"
       - "{{ failure_line if outcome != 'success' else '' }}"
+    work_note_lines: "{{ start_note if outcome == 'started' else result_note }}"
 
   tasks:
     - name: Update {{ snow_ritm_number }}
