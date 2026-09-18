@@ -1,5 +1,4 @@
 ---
-# provision_started is only defined when running as rollback in the provision workflow.
 - name: Skip rollback when provisioning created nothing
   when: provision_started is defined and not provision_started | bool
   block:
@@ -13,7 +12,6 @@
     - name: End play, nothing to roll back
       ansible.builtin.meta: end_play
 
-# Rollback reports separately so the provision failure summary reaches close-out intact.
 - name: Set summary artifact name
   ansible.builtin.set_fact:
     summary_key: "{{ 'rollback_summary' if provision_started is defined else 'snow_summary' }}"
@@ -47,7 +45,6 @@
     - dns_removal is failed
     - "'not found' not in (dns_removal.msg | default('') | lower)"
 
-# Without a fixed address nothing in IPAM refers to the IP, so there is no release to check.
 - name: Verify IP release for {{ existing_ip }}
   ansible.builtin.include_tasks: verify_release.yml
   when: decom_mac is defined
@@ -56,7 +53,7 @@
   ansible.builtin.set_stats:
     data: >-
       {{ {
-        summary_key: 'Decommissioned ' ~ decom_fqdn ~ ' (' ~ existing_ip
+        summary_key: 'Decommissioned: ' ~ decom_fqdn ~ ' (' ~ existing_ip
           ~ (' in ' ~ decom_network_cidr ~ '), DHCP fixed address for ' ~ decom_mac ~ ' removed, IP released back to pool'
              if decom_mac is defined else '), no DHCP fixed address'),
         'decom_owner': decom_owner,

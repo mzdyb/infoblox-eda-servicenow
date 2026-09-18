@@ -1,5 +1,4 @@
 ---
-# Universal DDI releases the address itself once nothing references it; portal counters lag, so ask the API.
 - name: Query IPAM address {{ existing_ip }}
   infoblox.universal_ddi.ipam_address_info:
     filters:
@@ -7,7 +6,6 @@
       space: "{{ decom_ip_space_id }}"
   register: ipam_check
 
-# LAB CHECK: assumes a released address either disappears or keeps an empty usage list.
 - name: Assert IP released back to pool
   ansible.builtin.assert:
     that: >-
