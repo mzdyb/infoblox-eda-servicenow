@@ -3,8 +3,6 @@
   ansible.builtin.set_fact:
     host_fqdn: "{{ snow_hostname }}.{{ default_zone }}"
 
-# Published first so a failure-path rollback always knows its target and that nothing exists yet.
-# aggregate: false everywhere, otherwise a republished key is concatenated or summed instead of replaced.
 - name: Publish rollback target
   ansible.builtin.set_stats:
     data:
@@ -24,7 +22,6 @@
     that: zone_lookup.objects | length > 0
     fail_msg: "DNS zone {{ default_zone }} not found in Infoblox"
 
-# filter_query, not filters: the module's filters form requires space, which is what we are looking up.
 - name: Look up subnet {{ snow_network_cidr }}
   infoblox.universal_ddi.ipam_subnet_info:
     filter_query: "address=='{{ snow_network_cidr.split('/')[0] }}' and cidr=={{ snow_network_cidr.split('/')[1] }}"
@@ -45,7 +42,7 @@
     zone_id: "{{ zone_lookup.objects[0].id }}"
     subnet_id: "{{ subnet_lookup.objects[0].id }}"
     ip_space_id: "{{ subnet_lookup.objects[0].space }}"
-    site: "{{ site_map[ip_space_lookup.objects[0].name] }}"
+    site: "{{ ip_space_lookup.objects[0].name }}"
 
 - name: Look up existing A record for {{ host_fqdn }}
   infoblox.universal_ddi.dns_record_info:
@@ -76,7 +73,6 @@
     count: 2
   register: next_ip
 
-# The first host address is usually the gateway, so it is never handed out.
 - name: Set allocated IP
   ansible.builtin.set_fact:
     allocated_ip: "{{ next_ip.objects | reject('equalto', gateway_ip) | first }}"
