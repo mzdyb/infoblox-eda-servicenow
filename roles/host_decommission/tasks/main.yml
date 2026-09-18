@@ -1,5 +1,5 @@
 ---
-# The provisioning workflow reuses this role for rollback. 
+# The provisioning workflow reuses this role for rollback.
 # provision_started is false until an IP is allocated so a failure before that means
 # nothing was created in Infoblox and rollback can be skipped
 - name: Skip rollback when provisioning created nothing
