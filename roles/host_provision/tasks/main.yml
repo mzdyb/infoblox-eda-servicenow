@@ -126,6 +126,6 @@
 - name: Publish provisioning result
   ansible.builtin.set_stats:
     data:
-      snow_summary: "Provisioned {{ host_fqdn }} at {{ allocated_ip }} in {{ snow_network_cidr }} (site {{ site }}), DHCP fixed address for {{ snow_mac }}"
+      snow_summary: "Provisioned: {{ host_fqdn }} at {{ allocated_ip }} in {{ snow_network_cidr }} (site {{ site }}), DHCP fixed address for {{ snow_mac }}"
     per_host: false
     aggregate: false
