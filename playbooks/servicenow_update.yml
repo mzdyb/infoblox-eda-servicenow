@@ -1,26 +1,12 @@
 ---
-# servicenow.itsm reads SN_HOST, SN_USERNAME and SN_PASSWORD from the environment. AAP credential type:
-#   inputs:
-#     fields:
-#       - {id: sn_host, type: string, label: ServiceNow instance URL}
-#       - {id: sn_username, type: string, label: Username}
-#       - {id: sn_password, type: string, label: Password, secret: true}
-#     required: [sn_host, sn_username, sn_password]
-#   injectors:
-#     env:
-#       SN_HOST: "{{ sn_host }}"
-#       SN_USERNAME: "{{ sn_username }}"
-#       SN_PASSWORD: "{{ sn_password }}"
 - name: Note ServiceNow request progress
   hosts: localhost
-  gather_facts: false
 
   vars:
-    # Defaults to failure so a node missing snow_outcome can never close a ticket.
+    # RITM notes definitions
     outcome: "{{ snow_outcome | default('failed_rolled_back', true) }}"
-    # Only the decommission workflow launches with snow_fqdn; deletions are never rolled back.
     failure_line: >-
-      {{ 'Deletions are never rolled back automatically, so Infoblox may be partially cleaned up. Request left open for review.'
+      {{ 'Deletions are not rolled back automatically so request may be in partially cleaned up state. Request left open for review.'
          if snow_fqdn is defined
          else 'Nothing was changed in Infoblox: the automation rolled the request back. Request left open for review.' }}
     start_note:
@@ -28,7 +14,6 @@
       - "{{ snow_ritm_number }}: started"
       - "Requested by: {{ snow_requested_by }}"
       - "AAP is running the {{ 'decommission' if snow_fqdn is defined else 'provisioning' }} workflow for {{ snow_fqdn | default(snow_hostname) }}"
-    # Upstream jobs that die early publish no artifacts, so every artifact read below has a default.
     result_note:
       - "[Ansible Automation]"
       - "{{ snow_ritm_number }}: {{ outcome }}"
