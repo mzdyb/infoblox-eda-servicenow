@@ -73,12 +73,16 @@
   infoblox.universal_ddi.ipam_next_available_ip_info:
     id: "{{ subnet_id }}"
     contiguous: false
-    count: 1
+    count: 2
   register: next_ip
 
+# The first host address is usually the gateway, so it is never handed out.
 - name: Set allocated IP
   ansible.builtin.set_fact:
-    allocated_ip: "{{ next_ip.objects[0] }}"
+    allocated_ip: "{{ next_ip.objects | reject('equalto', gateway_ip) | first }}"
+  vars:
+    network: "{{ subnet_lookup.objects[0].address }}"
+    gateway_ip: "{{ network.rsplit('.', 1)[0] }}.{{ network.split('.')[-1] | int + 1 }}"
 
 - name: Publish provisioning start
   ansible.builtin.set_stats:

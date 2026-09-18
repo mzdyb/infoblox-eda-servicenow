@@ -4,7 +4,6 @@
     decom_record_name: "{{ decom_fqdn.split('.')[0] }}"
     decom_zone_fqdn: "{{ decom_fqdn.split('.')[1:] | join('.') }}."
 
-# Asserted before the record lookup: a failed zone lookup must not look like an already-absent host.
 - name: Look up DNS zone {{ decom_zone_fqdn }}
   infoblox.universal_ddi.dns_auth_zone_info:
     filters:
@@ -28,7 +27,6 @@
       type: A
   register: decom_record_lookup
 
-# Artifacts must be published before end_play or close-out receives nothing.
 - name: Report already absent host
   when: decom_record_lookup.objects | length == 0
   block:
@@ -50,7 +48,6 @@
     existing_ip: "{{ decom_record_lookup.objects[0].rdata.address }}"
     decom_owner: "{{ decom_record_lookup.objects[0].tags.Owner | default('unknown', true) }}"
 
-# The fixed address carries the IP space and subnet; an A record leaves no trace in IPAM.
 - name: Look up DHCP fixed address at {{ existing_ip }}
   infoblox.universal_ddi.dhcp_fixed_address_info:
     filters:
@@ -76,7 +73,6 @@
         decom_ip_space_id: "{{ decom_dhcp_lookup.objects[0].ip_space }}"
         decom_network_cidr: "{{ decom_subnet_lookup.objects[0].address }}/{{ decom_subnet_lookup.objects[0].cidr }}"
 
-# The collection cannot filter CNAMEs by target, so only the host's own zone is checked.
 - name: Look up CNAME records in {{ decom_zone_fqdn }}
   infoblox.universal_ddi.dns_record_info:
     filters:

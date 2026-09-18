@@ -25,7 +25,8 @@
          else 'Nothing was changed in Infoblox: the automation rolled the request back. Request left open for review.' }}
     # Upstream jobs that die early publish no artifacts, so every artifact read below has a default.
     work_note_lines:
-      - "[Ansible Automation] {{ snow_ritm_number }}: {{ outcome }}"
+      - "[Ansible Automation]"
+      - "{{ snow_ritm_number }}: {{ outcome }}"
       - "Requested by: {{ snow_requested_by }}"
       - "{{ snow_summary | default('Job failed before publishing details, see the AAP job output') }}"
       - "{{ 'Previous owner: ' ~ decom_owner if snow_fqdn is defined and decom_owner is defined else '' }}"
@@ -38,4 +39,4 @@
         resource: sc_req_item
         action: patch
         sys_id: "{{ snow_ritm_sys_id }}"
-        data: "{{ {'work_notes': work_note_lines | select | join('\n')} | combine({'state': '3'} if outcome == 'success' else {}) }}"
+        data: "{{ {'work_notes': work_note_lines | select | join('\n\n')} | combine({'state': '3'} if outcome == 'success' else {}) }}"

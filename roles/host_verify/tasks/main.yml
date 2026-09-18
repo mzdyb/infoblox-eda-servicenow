@@ -31,14 +31,12 @@
             else ['no DHCP fixed address for ' ~ snow_mac ~ ' at ' ~ (host_ip or 'unknown IP')])
       }}
 
-# The summary goes out before the assert so close-out sees why verification failed.
 - name: Publish verification result
   ansible.builtin.set_stats:
     data:
-      snow_summary: >-
-        {{ (snow_summary ~ '; ') if snow_summary is defined else '' }}verification
+      snow_summary: "{{ (snow_summary ~ '\n\n') if snow_summary is defined else '' }}Verification
         {{ 'passed: A ' ~ host_fqdn ~ ' -> ' ~ host_ip ~ ', DHCP ' ~ snow_mac if verify_problems | length == 0
-           else 'failed: ' ~ verify_problems | join('; ') }}
+           else 'failed: ' ~ verify_problems | join('; ') }}"
     per_host: false
     aggregate: false
 
