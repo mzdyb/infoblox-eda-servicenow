@@ -1,5 +1,4 @@
 ---
-# Manual run, lab reset or rollback: -e decom_fqdn=host.corp.example.com
 - name: Decommission host
   hosts: localhost
 
