@@ -1,4 +1,7 @@
 ---
+# The provisioning workflow reuses this role for rollback. 
+# provision_started is false until an IP is allocated so a failure before that means
+# nothing was created in Infoblox and rollback can be skipped
 - name: Skip rollback when provisioning created nothing
   when: provision_started is defined and not provision_started | bool
   block:
@@ -12,7 +15,8 @@
     - name: End play, nothing to roll back
       ansible.builtin.meta: end_play
 
-- name: Set summary artifact name
+
+- name: Select summary key for rollback or decommission
   ansible.builtin.set_fact:
     summary_key: "{{ 'rollback_summary' if provision_started is defined else 'snow_summary' }}"
 
