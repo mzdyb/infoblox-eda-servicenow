@@ -3,10 +3,32 @@
   ansible.builtin.set_fact:
     host_fqdn: "{{ snow_hostname }}.{{ default_zone }}"
 
+- name: Look up DNS zone {{ default_zone }}
+  infoblox.universal_ddi.dns_auth_zone_info:
+    filters:
+      fqdn: "{{ default_zone }}."
+  register: zone_lookup
+
+- name: Assert zone resolved
+  ansible.builtin.assert:
+    that: zone_lookup.objects | length > 0
+    fail_msg: "DNS zone {{ default_zone }} not found in Infoblox"
+
+- name: Look up subnet {{ snow_network_cidr }}
+  infoblox.universal_ddi.ipam_subnet_info:
+    filter_query: "address=='{{ snow_network_cidr.split('/')[0] }}' and cidr=={{ snow_network_cidr.split('/')[1] }}"
+  register: subnet_lookup
+
+- name: Assert subnet resolved to exactly one object
+  ansible.builtin.assert:
+    that: subnet_lookup.objects | length == 1
+    fail_msg: "Subnet {{ snow_network_cidr }} matched {{ subnet_lookup.objects | length }} objects in Infoblox, expected 1"
+
 - name: Look up A record for {{ host_fqdn }}
   infoblox.universal_ddi.dns_record_info:
     filters:
       absolute_name_spec: "{{ host_fqdn }}."
+      zone: "{{ zone_lookup.objects[0].id }}"
       type: A
   register: dns_lookup
 
@@ -18,6 +40,7 @@
   infoblox.universal_ddi.dhcp_fixed_address_info:
     filters:
       address: "{{ host_ip }}"
+      ip_space: "{{ subnet_lookup.objects[0].space }}"
   register: dhcp_lookup
   when: host_ip | length > 0
 

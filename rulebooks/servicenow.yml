@@ -5,6 +5,8 @@
     - ansible.eda.webhook:
         host: 0.0.0.0
         port: 5000
+        # Demo lab, for simplicity token is not used
+        # token: "{{ eda_webhook_token }}"
 
   rules:
     - name: New Host Request -> provision workflow
@@ -20,7 +22,6 @@
               snow_app: "{{ event.payload.variables.app }}"
               snow_mac: "{{ event.payload.variables.mac }}"
               snow_owner: "{{ event.payload.variables.owner }}"
-              snow_justification: "{{ event.payload.variables.justification }}"
               snow_ritm_number: "{{ event.payload.ritm_number }}"
               snow_ritm_sys_id: "{{ event.payload.ritm_sys_id }}"
               snow_requested_by: "{{ event.payload.requested_by }}"
@@ -34,7 +35,6 @@
           job_args:
             extra_vars:
               snow_fqdn: "{{ event.payload.variables.fqdn }}"
-              snow_justification: "{{ event.payload.variables.justification }}"
               snow_ritm_number: "{{ event.payload.ritm_number }}"
               snow_ritm_sys_id: "{{ event.payload.ritm_sys_id }}"
               snow_requested_by: "{{ event.payload.requested_by }}"

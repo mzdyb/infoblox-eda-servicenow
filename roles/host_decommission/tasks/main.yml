@@ -60,8 +60,7 @@
         summary_key: 'Decommissioned: ' ~ decom_fqdn ~ ' (' ~ existing_ip
           ~ (' in ' ~ decom_network_cidr ~ '), DHCP fixed address for ' ~ decom_mac ~ ' removed, IP released back to pool'
              if decom_mac is defined else '), no DHCP fixed address'),
-        'decom_owner': decom_owner,
-        'decom_target_missing': false
+        'decom_owner': decom_owner
       } }}
     per_host: false
     aggregate: false

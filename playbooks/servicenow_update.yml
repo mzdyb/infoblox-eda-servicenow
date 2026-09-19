@@ -4,11 +4,18 @@
 
   vars:
     # RITM notes definitions
-    outcome: "{{ snow_outcome | default('failed_rolled_back', true) }}"
+    requested_outcome: "{{ snow_outcome | default('failed_rolled_back', true) }}"
+    rolled_back: "{{ rollback_summary is defined }}"
+    outcome: >-
+      {{ 'failed_rollback_incomplete'
+         if requested_outcome == 'failed_rolled_back' and snow_fqdn is not defined and not rolled_back | bool
+         else requested_outcome }}
     failure_line: >-
       {{ 'Deletions are not rolled back automatically so request may be in partially cleaned up state. Request left open for review.'
          if snow_fqdn is defined
-         else 'Nothing was changed in Infoblox: the automation rolled the request back. Request left open for review.' }}
+         else 'Nothing was changed in Infoblox: the automation rolled the request back. Request left open for review.'
+         if rolled_back | bool
+         else 'The rollback published no result, so Infoblox may hold a partial record for this request. Request left open for review.' }}
     start_note:
       - "[Ansible Automation]"
       - "{{ snow_ritm_number }}: started"
