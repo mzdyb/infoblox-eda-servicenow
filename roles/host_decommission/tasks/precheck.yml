@@ -33,10 +33,7 @@
     - name: Publish already-absent result
       ansible.builtin.set_stats:
         data: >-
-          {{ {
-            summary_key: decom_fqdn ~ ' is already absent, nothing to decommission',
-            'decom_target_missing': true
-          } }}
+          {{ { summary_key: decom_fqdn ~ ' is already absent, nothing to decommission' } }}
         per_host: false
         aggregate: false
 
