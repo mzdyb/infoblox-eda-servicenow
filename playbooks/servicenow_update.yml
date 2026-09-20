@@ -19,12 +19,10 @@
     start_note:
       - "[Ansible Automation]"
       - "{{ snow_ritm_number }}: started"
-      - "Requested by: {{ snow_requested_by }}"
       - "AAP is running the {{ 'decommission' if snow_fqdn is defined else 'provisioning' }} workflow for {{ snow_fqdn | default(snow_hostname) }}"
     result_note:
       - "[Ansible Automation]"
       - "{{ snow_ritm_number }}: {{ outcome }}"
-      - "Requested by: {{ snow_requested_by }}"
       - "{{ snow_summary | default('Job failed before publishing details, see the AAP job output') }}"
       - "{{ 'Previous owner: ' ~ decom_owner if snow_fqdn is defined and decom_owner is defined else '' }}"
       - "{{ 'Rollback: ' ~ rollback_summary | default('no rollback details published') if outcome != 'success' and snow_fqdn is not defined else '' }}"

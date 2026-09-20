@@ -5,7 +5,6 @@
     - ansible.eda.webhook:
         host: 0.0.0.0
         port: 5000
-        # Demo lab, for simplicity token is not used
         # token: "{{ eda_webhook_token }}"
 
   rules:
@@ -24,7 +23,6 @@
               snow_owner: "{{ event.payload.variables.owner }}"
               snow_ritm_number: "{{ event.payload.ritm_number }}"
               snow_ritm_sys_id: "{{ event.payload.ritm_sys_id }}"
-              snow_requested_by: "{{ event.payload.requested_by }}"
 
     - name: Host Decommission -> decommission workflow
       condition: event.payload.catalog_item == "Host Decommission"
@@ -37,4 +35,3 @@
               snow_fqdn: "{{ event.payload.variables.fqdn }}"
               snow_ritm_number: "{{ event.payload.ritm_number }}"
               snow_ritm_sys_id: "{{ event.payload.ritm_sys_id }}"
-              snow_requested_by: "{{ event.payload.requested_by }}"
