@@ -40,7 +40,7 @@ he following diagram shows the automation workflow configured in AAP:
   <img
     src="files/infoblox%20-%20host%20provision%20workflow.png"
     alt="Host provisioning workflow"
-    width="65%"
+    width="80%"
   >
 </div>
 
@@ -69,7 +69,7 @@ The following diagram shows the automation workflow configured in AAP:
   <img
     src="files/infoblox%20-%20host%20decommission%20workflow.png"
     alt="Host decommissioning workflow"
-    width="55%"
+    width="80%"
   >
 </div>
 
@@ -83,7 +83,7 @@ The following screenshots show example ServiceNow RITMs for host provisioning an
   <img
     src="files/new_host_ritm1.png"
     alt="ServiceNow RITM for host provisioning - screenshot 1"
-    width="55%"
+    width="80%"
   >
 </div>
 
@@ -91,7 +91,7 @@ The following screenshots show example ServiceNow RITMs for host provisioning an
   <img
     src="files/new_host_ritm2.png"
     alt="ServiceNow RITM for host provisioning - screenshot 2"
-    width="55%"
+    width="80%"
   >
 </div>
 
@@ -101,7 +101,7 @@ The following screenshots show example ServiceNow RITMs for host provisioning an
   <img
     src="files/host_decommision_ritm1.png"
     alt="ServiceNow RITM for host decommissioning - screenshot 1"
-    width="55%"
+    width="80%"
   >
 </div>
 
@@ -109,7 +109,7 @@ The following screenshots show example ServiceNow RITMs for host provisioning an
   <img
     src="files/host_decommision_ritm2.png"
     alt="ServiceNow RITM for host decommissioning - screenshot 2"
-    width="55%"
+    width="80%"
   >
 </div>
 
