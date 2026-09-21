@@ -1,6 +1,6 @@
 # Event-Driven Ansible for Infoblox and ServiceNow
 
-This project demonstrates how to provision and decommission hosts in Infoblox Universal DDI through ServiceNow requests using Event-Driven Ansible (EDA) and Red Hat Ansible Automation Platform (AAP).
+This project demonstrates how to automatically provision and decommission hosts in Infoblox Universal DDI through ServiceNow requests using Event-Driven Ansible (EDA) and Red Hat Ansible Automation Platform (AAP).
 
 A user submits a ServiceNow catalog request to provision a new host or decommission an existing one. ServiceNow sends an event to EDA in real time, where a matching rule triggers an AAP automation workflow. Ansible performs the requested changes in Infoblox and updates the ServiceNow request with the outcome.
 
