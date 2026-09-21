@@ -8,8 +8,8 @@ A user submits a ServiceNow catalog request to provision a new host or decommiss
 
 ![Architecture](files/infoblox_eda_snow.png)
 
-1. A requester submits either a **New Host Request** or **Host Decommission** catalog item in ServiceNow.
-2. A **New Host Request** is approved automatically. A **Host Decommission** request remains pending until it is approved. If the request is rejected, ServiceNow closes the Requested Item (RITM).
+1. A requester submits either a **New Host Request** or **Host Decommission Request** catalog item in ServiceNow.
+2. A **New Host Request** is approved automatically. A **Host Decommission Request** remains pending until it is approved. If the request is rejected, ServiceNow closes the Requested Item (RITM).
 3. When the RITM approval status changes to `Approved`, ServiceNow sends the request payload to the EDA webhook using an HTTP POST request.
 4. The EDA rulebook in `rulebooks/servicenow.yml` identifies the catalog item and launches the corresponding AAP workflow.
 5. The workflow updates the Infoblox configuration, verifies the result, rolls back unsuccessful provisioning changes and updates the RITM.
