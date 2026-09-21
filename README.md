@@ -40,7 +40,7 @@ he following diagram shows the automation workflow configured in AAP:
   <img
     src="files/infoblox%20-%20host%20provision%20workflow.png"
     alt="Host provisioning workflow"
-    width="80%"
+    width="100%"
   >
 </div>
 
