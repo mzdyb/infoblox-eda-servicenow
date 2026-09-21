@@ -16,7 +16,7 @@ A user submits a ServiceNow catalog request to provision a new host or decommiss
 
 ## Workflows Details
 
-### Provisioning
+### Host Provisioning
 
 1. A user submits a **New Host Request** in ServiceNow.
 2. Ansible records in the RITM work notes that the automation workflow has started.
@@ -37,7 +37,7 @@ A user submits a ServiceNow catalog request to provision a new host or decommiss
 The following diagram shows the automation workflow configured in AAP:  
 ![host provisioning](<files/infoblox - host provision workflow.png>)
 
-### Decommissioning
+### Host Decommissioning
 
 1. A user submits a **Host Decommission** request in ServiceNow. Only the FQDN is required; Ansible resolves all other information from Infoblox.
 2. Ansible records in the RITM work notes that the automation workflow has started.
