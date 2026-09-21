@@ -34,8 +34,15 @@ A user submits a ServiceNow catalog request to provision a new host or decommiss
 6. On failure, Ansible records the outcome in the RITM work notes and leaves the request open.
 
 #### AAP Workflow Job Template for host provisioning
-The following diagram shows the automation workflow configured in AAP:  
-![host provisioning](<files/infoblox - host provision workflow.png>)
+he following diagram shows the automation workflow configured in AAP:
+
+<div>
+  <img
+    src="files/infoblox%20-%20host%20provision%20workflow.png"
+    alt="Host provisioning workflow"
+    width="65%"
+  >
+</div>
 
 ### Host Decommissioning
 
@@ -54,12 +61,57 @@ The following diagram shows the automation workflow configured in AAP:
 5. On success, Ansible records the previous owner and closes the RITM.
 6. On failure, Ansible records the outcome in the RITM work notes and leaves the request open.
 
-#### AAP Workflow Job Template for host decomission
-The following diagram shows the automation workflow configured in AAP:  
-![host decomission](<files/infoblox - host decommission workflow.png>)
+#### AAP Workflow Job Template for Host Decommissioning
 
+The following diagram shows the automation workflow configured in AAP:
 
+<div>
+  <img
+    src="files/infoblox%20-%20host%20decommission%20workflow.png"
+    alt="Host decommissioning workflow"
+    width="55%"
+  >
+</div>
 
+## Workflow Records in ServiceNow
+
+The following screenshots show example ServiceNow RITMs for host provisioning and decommissioning. AAP automatically updates each RITM's status and work notes.
+
+### Host Provisioning
+
+<div>
+  <img
+    src="files/new_host_ritm1.png"
+    alt="ServiceNow RITM for host provisioning - screenshot 1"
+    width="55%"
+  >
+</div>
+
+<div>
+  <img
+    src="files/new_host_ritm2.png"
+    alt="ServiceNow RITM for host provisioning - screenshot 2"
+    width="55%"
+  >
+</div>
+
+### Host Decommissioning
+
+<div>
+  <img
+    src="files/host_decommision_ritm1.png"
+    alt="ServiceNow RITM for host decommissioning - screenshot 1"
+    width="55%"
+  >
+</div>
+
+<div>
+  <img
+    src="files/host_decommision_ritm2.png"
+    alt="ServiceNow RITM for host decommissioning - screenshot 2"
+    width="55%"
+  >
+</div>
 
 ## Related project
 
