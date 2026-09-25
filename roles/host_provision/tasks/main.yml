@@ -95,7 +95,6 @@
       App: "{{ snow_app }}"
       Ticket: "{{ snow_ritm_number }}"
       Site: "{{ site }}"
-      Lifecycle: active
 
 - name: Create A record {{ host_fqdn }}
   infoblox.universal_ddi.dns_record:

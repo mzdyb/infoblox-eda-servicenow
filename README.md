@@ -25,7 +25,7 @@ A user submits a ServiceNow catalog request to provision a new host or decommiss
     - Resolves the zone and subnet (by CIDR) in Infoblox, then the subnet's IP space. The IP space name is used as the `Site` tag.
     - If an A record already exists for the FQDN, reports that the host already exists and makes no changes.
     - Otherwise, allocates the next available IP address while skipping the subnet's first host address (usually reserved for the gateway).
-    - Creates the A record and DHCP fixed address. Both objects are tagged with `Owner`, `App`, `Ticket`, `Site`, and `Lifecycle`.
+    - Creates the A record and DHCP fixed address. Both objects are tagged with `Owner`, `App`, `Ticket`, and `Site`.
 4. Ansible verifies the resulting configuration:
     - Resolves the zone and requested subnet again.
     - Confirms that the A record exists in the expected zone.
