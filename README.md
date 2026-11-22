@@ -120,3 +120,5 @@ For Configuration-as-Code approach with declarative, Git-driven management of In
 ## Author
 
 [Michal Zdyb](https://www.linkedin.com/in/michal-zdyb-9aa4046/)
+
+Built with assistance from [Claude Code](https://claude.com/claude-code).
